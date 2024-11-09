@@ -34,13 +34,11 @@ const semester = new Schema({
 const Students= new Schema({
     reg_no: Number, 
     name: String,
-    batch: { type: Schema.Types.ObjectId, ref: 'Batch' },
-    department: { type: Schema.Types.ObjectId, ref: 'Dept' }, 
-    subjects: [{ type: Schema.Types.ObjectId, ref: 'Subject' }], 
-    arrears: [{
-        subject: { type: Schema.Types.ObjectId, ref: 'Subject' },
-        paper_cost: String 
-    }]
+    // batch: { type: Schema.Types.ObjectId, ref: 'Batch' },
+    // department: { type: Schema.Types.ObjectId, ref: 'Dept' }, 
+    // subjects: [{ type: Schema.Types.ObjectId, ref: 'Subject' }], 
+    papers: [{subject: { type: Schema.Types.ObjectId, ref: 'Subject'}, }]
+    
 });
 
 
@@ -49,7 +47,7 @@ const DeptModel = mongoose.model('Departments', Dept);
 const BatchModel = mongoose.model('Batches', batch);
 const SubjectsModel = mongoose.model('Subjects', subjects)
 const SemesterModel = mongoose.model('semester', semester)
-const StudentModel = mongoose.connect('Students', Students)
+const StudentModel = mongoose.model('Students', Students)
 
 
 module.exports = {
@@ -59,6 +57,4 @@ module.exports = {
     SubjectsModel : SubjectsModel,
     SemesterModel : SemesterModel,
     StudentModel :StudentModel
-
-
 }
