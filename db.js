@@ -10,25 +10,25 @@ const Admin = new Schema({
 
 const Dept = new Schema({   
     department: String,
-    batches: [{ type: Schema.Types.ObjectId, ref: 'Batch' }] 
+    
 })
 
 const batch = new Schema({
     batch: String, 
-    department: { type: Schema.Types.ObjectId, ref: 'Dept' }, 
-    semesters: [{ type: Schema.Types.ObjectId, ref: 'Semester' }],
+    department: { type:  Schema.Types.ObjectId, ref: 'Dept' }, 
+    semesters: [{ type: Schema.Types.ObjectId, ref: 'semester' }],
     students: [{ type: Schema.Types.ObjectId, ref: 'Student' }]
 })
 
 const subjects = new Schema({
-    code: String,
-    name: String,
+    code : { type : String, unique : true},
+    name : String,
     paper_cost: String
 })
 
 const semester = new Schema({
     sem_no: Number,
-    subjects: [{ type: Schema.Types.ObjectId, ref: 'Subject' }] 
+    subject : [{ type: Schema.Types.ObjectId, ref: 'subjects' }] 
 })
 
 const Students= new Schema({
@@ -36,9 +36,9 @@ const Students= new Schema({
     name: String,
     // batch: { type: Schema.Types.ObjectId, ref: 'Batch' },
     // department: { type: Schema.Types.ObjectId, ref: 'Dept' }, 
-    // subjects: [{ type: Schema.Types.ObjectId, ref: 'Subject' }], 
-    papers: [{subject: { type: Schema.Types.ObjectId, ref: 'Subject'}, }]
-    
+    papers : [{ type: Schema.Types.ObjectId, ref: 'Subject' }], 
+    // papers: [{subjects: { type: Schema.Types.ObjectId, ref: 'Subject'}, }]
+
 });
 
 
