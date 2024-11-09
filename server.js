@@ -6,9 +6,13 @@ mongoose.connect(process.env.MONGO_URI)
 
 //routes - files
 const { adminRouter } = require('./routes/admin');
+const { mainRouter } = require('./routes/main');
+
 app.use(express.json()) //json middleware
 
 app.use('/admin', adminRouter);
+app.use('/main', mainRouter );
+
 
 app.listen(3000, ()=>{
     console.log("Server is Running !")
