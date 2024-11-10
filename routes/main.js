@@ -3,7 +3,7 @@ const mainRouter = Router();
 // imported middleware
 const { adminMiddleware } = require('../middleware/adminAuth');
 
-mainRouter.use(adminMiddleware);
+// mainRouter.use(adminMiddleware);
 // imported db file
 const { DeptModel, BatchModel, SubjectsModel, SemesterModel, StudentModel } = require('../db');
 
