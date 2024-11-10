@@ -21,14 +21,14 @@ const batch = new Schema({
 })
 
 const subjects = new Schema({
-    code : { type : String, unique : true},
+    code : { type : String, unique : true },
     name : String,
     paper_cost: String
 })
 
 const semester = new Schema({
-    sem_no: Number,
-    subject : [{ type: Schema.Types.ObjectId, ref: 'subjects' }] 
+    sem_no: { type: Number, unique: true },
+    subjects : [{ type: Schema.Types.ObjectId, ref: 'subjects' }] 
 })
 
 const Students= new Schema({

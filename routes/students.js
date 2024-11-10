@@ -7,19 +7,42 @@ const { adminMiddleware } = require('../middleware/adminAuth');
 const { DeptModel, BatchModel, SubjectsModel, SemesterModel, StudentModel } = require('../db');
 
 
-
 // Endpoint to add a subject
 studentRouter.post("/insert", async (req, res) => {
     console.log("Vantaapla..")
     const rawData = req.body.data;
     const deptId = req.body.dept;
-    const batchID = req.body.batch;
+    const batch = req.body.batch;
     // console.log(deptId, batchID, rawData)
-    if(!rawData){
+    if(!(rawData && deptId && batch)){
         return res.status(400).json({
             message: "No Data to add"
         });
     }
+    
+    try {
+        // Creating Batch
+        const department = await DeptModel.findById(deptId);
+        if (!department) {
+            return res.status(404).json({ message: "Department not found" });
+        }
+        const createdBatch = await BatchModel.create({ batch, department: deptId });
+        const batchId = createdBatch._id
+
+        // Creating semester
+        
+        
+    } catch (err) {
+        res.status(500).json({
+            message: "Error adding batch",
+            error: err.message
+        });
+    }
+
+
+
+
+
     try {
         console.log(rawData)
         // const createdSubject = await SubjectsModel.create({ code, name, paper_cost });
@@ -35,26 +58,58 @@ studentRouter.post("/insert", async (req, res) => {
 })
 
 
+studentRouter.post("/add_full_data", async (req, res) => {
+    const { semesterData, subjectsData, studentsData } = req.body.semesterData.subjectsData.studentsData;
 
+    try {
+        // 1. Create or Find Semester
+        let semester = await SemesterModel.findOne({ sem_no: semesterData.sem_no });
+        if (!semester) {
+            semester = await SemesterModel.create({ sem_no: semesterData.sem_no });
+        }
 
+        // 2. Add Subjects and Link to Semester
+        const subjectIds = await Promise.all(subjectsData.map(async (subject) => {
+            let existingSubject = await SubjectsModel.findOne({ code: subject.code });
+            if (!existingSubject) {
+                existingSubject = await SubjectsModel.create(subject);
+            }
+            return existingSubject._id;
+        }));
+        semester.subject = subjectIds;
+        await semester.save();
 
+        // 3. Add Student Details
+        const studentPromises = studentsData.map(async (student) => {
+            const papers = await Promise.all(Object.keys(student).map(async (subjectCode) => {
+                const status = student[subjectCode];
+                const subject = await SubjectsModel.findOne({ code: subjectCode });
+                if (subject) {
+                    return { subject: subject._id, status };
+                }
+            }).filter(paper => paper !== undefined));
 
+            return StudentModel.create({
+                reg_no: student.reg_no,
+                name: student.name,
+                papers,
+            });
+        });
 
+        const students = await Promise.all(studentPromises);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        // Respond with created data
+        res.status(201).json({
+            message: "Data added successfully",
+            data: { semester, subjects: subjectIds, students }
+        });
+    } catch (err) {
+        res.status(500).json({
+            message: "Error adding data",
+            error: err.message
+        });
+    }
+});
 
 
 
