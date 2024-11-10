@@ -2,9 +2,64 @@ const { Router } = require('express');
 const studentRouter = Router();
 // imported middleware
 const { adminMiddleware } = require('../middleware/adminAuth');
-studentRouter.use(adminMiddleware);
+// studentRouter.use(adminMiddleware);
 
 const { DeptModel, BatchModel, SubjectsModel, SemesterModel, StudentModel } = require('../db');
+
+
+
+// Endpoint to add a subject
+studentRouter.post("/insert", async (req, res) => {
+    console.log("Vantaapla..")
+    const rawData = req.body.data;
+    const deptId = req.body.dept;
+    const batchID = req.body.batch;
+    // console.log(deptId, batchID, rawData)
+    if(!rawData){
+        return res.status(400).json({
+            message: "No Data to add"
+        });
+    }
+    try {
+        console.log(rawData)
+        // const createdSubject = await SubjectsModel.create({ code, name, paper_cost });
+        res.status(201).json({
+            message: "Subject created successfully",
+        });
+    } catch (err) {
+        res.status(500).json({
+            message: "Error adding subject",
+            error: err.message
+        });
+    }
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // Endpoint to add a subject
 studentRouter.post("/add_Subject", async (req, res) => {
@@ -102,4 +157,6 @@ studentRouter.get("/students", async (req, res) => {
     }
 });
 
-module.exports = { studentRouter };
+module.exports = {  
+    studentRouter: studentRouter
+ };
