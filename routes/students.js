@@ -5,16 +5,54 @@ const { adminMiddleware } = require('../middleware/adminAuth');
 // studentRouter.use(adminMiddleware);
 
 const { DeptModel, BatchModel, SubjectsModel, SemesterModel, StudentModel } = require('../db');
+const { default: mongoose } = require('mongoose');
 
+const calculateCost = (subjectCode) => {
+    if (subjectCode.toUpperCase().includes("T+L")){
+        return "600";
+    }else{
+        return "300";
+    }
+}
+const createSemester = async (semesters) => {
+    const semArray = [];
+    for (const semester of semesters) {
+        
+        const createdSemester = await SemesterModel.create({ sem_no: semester.sem_no });
+        console.log(createdSemester);
 
-// Endpoint to add a subject
+        for (const subject of semester.subjects) {
+            const cost = calculateCost(subject.code);
+            
+            let createdSubject = await SubjectsModel.findOne({ code: subject.code });
+            console.log(createdSubject);
+
+            if (!createdSubject) {
+                createdSubject = await SubjectsModel.create({
+                    code: subject.code,
+                    name: subject.name,
+                    paper_cost: cost
+                });
+                console.log(createdSubject);
+            }
+
+            createdSemester.subjects.push(new mongoose.Types.ObjectId(createdSubject._id));
+        }
+
+        await createdSemester.save();
+        semArray.push(createdSemester._id);
+    }
+    console.log(semArray)
+    return semArray
+};
+
 studentRouter.post("/insert", async (req, res) => {
     console.log("Vantaapla..")
-    const rawData = req.body.data;
+    const insertData = req.body.data;
     const deptId = req.body.dept;
-    const batch = req.body.batch;
+    const batch = req.body.batch; //2026
     // console.log(deptId, batchID, rawData)
-    if(!(rawData && deptId && batch)){
+    if(!(insertData && deptId && batch)){
         return res.status(400).json({
             message: "No Data to add"
         });
@@ -27,35 +65,132 @@ studentRouter.post("/insert", async (req, res) => {
             return res.status(404).json({ message: "Department not found" });
         }
         const createdBatch = await BatchModel.create({ batch, department: deptId });
-        const batchId = createdBatch._id
 
-        // Creating semester
+        //creating semesters
+        const semArray = await createSemester(insertData.semesters)
+        createdBatch.semesters = semArray
+        await createdBatch.save()  
         
+        department.batches.push(new mongoose.Types.ObjectId(createdBatch._id))
+        await department.save()
+
+        //creating Students
+        
+
+
+        res.status(201).json({
+            message: "Datas Inserted successfully"
+        });
         
     } catch (err) {
         res.status(500).json({
-            message: "Error adding batch",
+            message: "Error in Inserting Data",
             error: err.message
         });
     }
 
+})
 
 
-
+studentRouter.post("/add_semesters_and_subjects", async (req, res) => {
+    const data = req.body;
 
     try {
-        console.log(rawData)
-        // const createdSubject = await SubjectsModel.create({ code, name, paper_cost });
+        let currentSemNo = null;
+        let subjectIds = [];
+
+        // Step 1: Iterate over each key-value pair in data
+        for (const [key, value] of Object.entries(data)) {
+            // Check for "SEM" key to identify a new semester
+            if (key === "SEM" && Number.isInteger(value)) {
+                // Save the previous semester if it exists
+                if (currentSemNo !== null) {
+                    // Check if semester already exists or create new
+                    let semester = await SemesterModel.findOne({ sem_no: currentSemNo });
+                    if (!semester) {
+                        semester = new SemesterModel({ sem_no: currentSemNo });
+                    }
+                    semester.subject = subjectIds;
+                    await semester.save();
+
+                    // Reset subjects for next semester
+                    subjectIds = [];
+                }
+
+                // Update to new semester number
+                currentSemNo = value;
+            } else if (currentSemNo !== null) {
+                // Handle subjects for the current semester
+                const subjectCode = key;
+                const subjectName = value;
+
+                // Find or create subject by code
+                let subject = await SubjectsModel.findOne({ code: subjectCode });
+                if (!subject) {
+                    subject = await SubjectsModel.create({
+                        code: subjectCode,
+                        name: subjectName,
+                        paper_cost: "" // Adjust with appropriate cost if available
+                    });
+                }
+                // Collect subject ID for current semester
+                subjectIds.push(subject._id);
+            }
+        }
+
+        // Step 2: Save the last semester after loop ends
+        if (currentSemNo !== null) {
+            let semester = await SemesterModel.findOne({ sem_no: currentSemNo });
+            if (!semester) {
+                semester = new SemesterModel({ sem_no: currentSemNo });
+            }
+            semester.subject = subjectIds;
+            await semester.save();
+        }
+
         res.status(201).json({
-            message: "Subject created successfully",
+            message: "Semesters and subjects added successfully"
         });
     } catch (err) {
         res.status(500).json({
-            message: "Error adding subject",
+            message: "Error adding semesters and subjects",
             error: err.message
         });
     }
-})
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 studentRouter.post("/add_full_data", async (req, res) => {
