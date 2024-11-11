@@ -7,6 +7,7 @@ const { adminMiddleware } = require('../middleware/adminAuth');
 const { DeptModel, BatchModel, SubjectsModel, SemesterModel, StudentModel } = require('../db');
 const { default: mongoose } = require('mongoose');
 
+//function to calculate the subjects amount
 const calculateCost = (subjectCode) => {
     if (subjectCode.toUpperCase().includes("T+L")){
         return "600";
@@ -14,6 +15,8 @@ const calculateCost = (subjectCode) => {
         return "300";
     }
 }
+
+//function to create the semester
 const createSemester = async (semesters) => {
     const semArray = [];
     for (const semester of semesters) {
@@ -40,12 +43,53 @@ const createSemester = async (semesters) => {
         }
 
         await createdSemester.save();
-        semArray.push(createdSemester._id);
+        semArray.push(new mongoose.Types.ObjectId(createdSemester._id));
     }
     console.log(semArray)
     return semArray
 };
 
+// function to create the student data 
+const createStudent = async (studentData) => {
+    const studentsRef = []
+    for ( student of studentData){
+        const { reg_no, name, papers } = student;
+        const paperReferences = [];
+
+        for (const paper of papers) {
+            const { code, type } = paper;
+
+            // Find the subject by its code
+            let subject = await SubjectsModel.findOne({ code: code });
+            if (!subject) {
+                // Optional: handle cases where the subject code is not found
+                console.log(`Subject with code ${code} not found.`);
+                continue;
+            }
+
+            // Push the paper with its ObjectId reference and type
+            paperReferences.push({
+                paper: subject._id,
+                type: type
+            });
+        }
+
+        // Create the student with their papers
+        let createdStudent = await StudentModel.findOne({ reg_no: reg_no });
+        if (!createStudent){
+            createdStudent = await StudentModel.create({
+                reg_no,
+                name,
+                papers: paperReferences
+            });            
+        } 
+        
+        studentsRef.push(new mongoose.Types.ObjectId(createdStudent._id))
+    }
+    return studentsRef
+};
+
+//route to insert the student data's inm data base
 studentRouter.post("/insert", async (req, res) => {
     console.log("Vantaapla..")
     const insertData = req.body.data;
@@ -76,6 +120,15 @@ studentRouter.post("/insert", async (req, res) => {
 
         //creating Students
         
+        const studentData = insertData.students;  // Assuming student data is directly in the request body
+        
+        if (!(studentData.length > 0)) {
+            return res.status(400).json({ message: "Incomplete student data" });
+        }
+
+        const studentsRef = await createStudent(studentData);
+        createdBatch.students = studentsRef
+        await createdBatch.save()
 
 
         res.status(201).json({
@@ -88,264 +141,152 @@ studentRouter.post("/insert", async (req, res) => {
             error: err.message
         });
     }
-
 })
 
+//route to display all the student by filtering batch and dept.
+studentRouter.post('/all', async (req, res) => {
+    const { dept_id, batch } = req.body; // Extract dept_id and batch from query parameters
 
-studentRouter.post("/add_semesters_and_subjects", async (req, res) => {
-    const data = req.body;
-
-    try {
-        let currentSemNo = null;
-        let subjectIds = [];
-
-        // Step 1: Iterate over each key-value pair in data
-        for (const [key, value] of Object.entries(data)) {
-            // Check for "SEM" key to identify a new semester
-            if (key === "SEM" && Number.isInteger(value)) {
-                // Save the previous semester if it exists
-                if (currentSemNo !== null) {
-                    // Check if semester already exists or create new
-                    let semester = await SemesterModel.findOne({ sem_no: currentSemNo });
-                    if (!semester) {
-                        semester = new SemesterModel({ sem_no: currentSemNo });
-                    }
-                    semester.subject = subjectIds;
-                    await semester.save();
-
-                    // Reset subjects for next semester
-                    subjectIds = [];
-                }
-
-                // Update to new semester number
-                currentSemNo = value;
-            } else if (currentSemNo !== null) {
-                // Handle subjects for the current semester
-                const subjectCode = key;
-                const subjectName = value;
-
-                // Find or create subject by code
-                let subject = await SubjectsModel.findOne({ code: subjectCode });
-                if (!subject) {
-                    subject = await SubjectsModel.create({
-                        code: subjectCode,
-                        name: subjectName,
-                        paper_cost: "" // Adjust with appropriate cost if available
-                    });
-                }
-                // Collect subject ID for current semester
-                subjectIds.push(subject._id);
-            }
-        }
-
-        // Step 2: Save the last semester after loop ends
-        if (currentSemNo !== null) {
-            let semester = await SemesterModel.findOne({ sem_no: currentSemNo });
-            if (!semester) {
-                semester = new SemesterModel({ sem_no: currentSemNo });
-            }
-            semester.subject = subjectIds;
-            await semester.save();
-        }
-
-        res.status(201).json({
-            message: "Semesters and subjects added successfully"
-        });
-    } catch (err) {
-        res.status(500).json({
-            message: "Error adding semesters and subjects",
-            error: err.message
+    if (!dept_id || !batch) {
+        return res.status(400).json({
+            message: "Please provide both dept_id and batch as query parameters."
         });
     }
-});
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-studentRouter.post("/add_full_data", async (req, res) => {
-    const { semesterData, subjectsData, studentsData } = req.body.semesterData.subjectsData.studentsData;
 
     try {
-        // 1. Create or Find Semester
-        let semester = await SemesterModel.findOne({ sem_no: semesterData.sem_no });
-        if (!semester) {
-            semester = await SemesterModel.create({ sem_no: semesterData.sem_no });
-        }
-
-        // 2. Add Subjects and Link to Semester
-        const subjectIds = await Promise.all(subjectsData.map(async (subject) => {
-            let existingSubject = await SubjectsModel.findOne({ code: subject.code });
-            if (!existingSubject) {
-                existingSubject = await SubjectsModel.create(subject);
-            }
-            return existingSubject._id;
-        }));
-        semester.subject = subjectIds;
-        await semester.save();
-
-        // 3. Add Student Details
-        const studentPromises = studentsData.map(async (student) => {
-            const papers = await Promise.all(Object.keys(student).map(async (subjectCode) => {
-                const status = student[subjectCode];
-                const subject = await SubjectsModel.findOne({ code: subjectCode });
-                if (subject) {
-                    return { subject: subject._id, status };
+        // Find students related to the found batch
+        const batchDoc = await BatchModel.findOne({ batch, department: dept_id })
+            .populate({
+                path: 'students',
+                model: 'Students',  // Ensure this matches exactly with the Student model name
+                populate: {
+                    path: 'papers.paper',
+                    model: 'Subjects', // Ensure this matches the Subject model name
+                    select: 'code name paper_cost'
                 }
-            }).filter(paper => paper !== undefined));
-
-            return StudentModel.create({
-                reg_no: student.reg_no,
-                name: student.name,
-                papers,
             });
-        });
 
-        const students = await Promise.all(studentPromises);
 
-        // Respond with created data
-        res.status(201).json({
-            message: "Data added successfully",
-            data: { semester, subjects: subjectIds, students }
+        if (!batchDoc) {
+            return res.status(404).json({ message: "Batch not found in the specified department." });
+        }
+        res.status(200).json({
+            message: "Students data retrieved successfully",
+            data: batchDoc.students
         });
-    } catch (err) {
+    } catch (error) {
+        console.error("Error fetching students for the specified department and batch:", error);
         res.status(500).json({
-            message: "Error adding data",
-            error: err.message
+            message: "Error retrieving student data",
+            error: error.message
         });
     }
 });
 
+//--------------------------------------------------------------------------------------------------------------------------------------//
 
-
-
-
-
+//futuristic routes for adding sub, sem need to update all the routes
 // Endpoint to add a subject
-studentRouter.post("/add_Subject", async (req, res) => {
-    const { code, name, paper_cost } = req.body;
-    try {
-        const createdSubject = await SubjectsModel.create({ code, name, paper_cost });
-        res.status(201).json({
-            message: "Subject created successfully",
-            data: createdSubject
-        });
-    } catch (err) {
-        res.status(500).json({
-            message: "Error adding subject",
-            error: err.message
-        });
-    }
-});
+//--------------------------------------------------------------------------------------------------------------------------------------//
 
-// Endpoint to get all subjects
-studentRouter.get("/subjects", async (req, res) => {
-    try {
-        const subjects = await SubjectsModel.find();
-        res.status(200).json({ subjects });
-    } catch (err) {
-        res.status(500).json({
-            message: "Error retrieving subjects",
-            error: err.message
-        });
-    }
-});
 
-// Endpoint to add a semester
-studentRouter.post("/add_Semester", async (req, res) => {
-    const { sem_no, subjectIds } = req.body;
-    console.log(subjectIds)
-    try {
-        const createdSemester = await SemesterModel.create({ sem_no, subjectIds });
-        res.status(201).json({
-            message: "Semester created successfully",
-            data: createdSemester
-        });
-    } catch (err) {
-        res.status(500).json({
-            message: "Error adding semester",
-            error: err.message
-        });
-    }
-});
+// studentRouter.post("/add_Subject", async (req, res) => {
+//     const { code, name, paper_cost } = req.body;
+//     try {
+//         const createdSubject = await SubjectsModel.create({ code, name, paper_cost });
+//         res.status(201).json({
+//             message: "Subject created successfully",
+//             data: createdSubject
+//         });
+//     } catch (err) {
+//         res.status(500).json({
+//             message: "Error adding subject",
+//             error: err.message
+//         });
+//     }
+// });
 
-// Endpoint to get all semesters with subjects
-studentRouter.get("/semesters", async (req, res) => {
-    try {
-        const semesters = await SemesterModel.find()
-        res.status(200).json({ semesters });
-    } catch (err) {
-        res.status(500).json({
-            message: "Error retrieving semesters",
-            error: err.message
-        });
-    }
-});
+// // Endpoint to get all subjects
+// studentRouter.get("/subjects", async (req, res) => {
+//     try {
+//         const subjects = await SubjectsModel.find();
+//         res.status(200).json({ subjects });
+//     } catch (err) {
+//         res.status(500).json({
+//             message: "Error retrieving subjects",
+//             error: err.message
+//         });
+//     }
+// });
 
-// Endpoint to add a student
-studentRouter.post("/add_Student", async (req, res) => {
-    const { reg_no, name, papers } = req.body;
-    try {
-        const student = new StudentModel({
-            reg_no,
-            name,
-            papers: papers.map(id => mongoose.Types.ObjectId(id))
-        });
-        const createdStudent = await student.save();
-        res.status(201).json({
-            message: "Student created successfully",
-            data: createdStudent
-        });
-    } catch (err) {
-        res.status(500).json({
-            message: "Error creating student",
-            error: err.message
-        });
-    }
-});
+// // Endpoint to add a semester
+// studentRouter.post("/add_Semester", async (req, res) => {
+//     const { sem_no, subjectIds } = req.body;
+//     console.log(subjectIds)
+//     try {
+//         const createdSemester = await SemesterModel.create({ sem_no, subjectIds });
+//         res.status(201).json({
+//             message: "Semester created successfully",
+//             data: createdSemester
+//         });
+//     } catch (err) {
+//         res.status(500).json({
+//             message: "Error adding semester",
+//             error: err.message
+//         });
+//     }
+// });
 
-// Endpoint to get all students
-studentRouter.get("/students", async (req, res) => {
-    try {
-        const students = await StudentModel.find().populate('subjects').populate('batch').populate('department');
-        res.status(200).json({ students });
-    } catch (err) {
-        res.status(500).json({
-            message: "Error retrieving students",
-            error: err.message
-        });
-    }
-});
+// // Endpoint to get all semesters with subjects
+// studentRouter.get("/semesters", async (req, res) => {
+//     try {
+//         const semesters = await SemesterModel.find()
+//         res.status(200).json({ semesters });
+//     } catch (err) {
+//         res.status(500).json({
+//             message: "Error retrieving semesters",
+//             error: err.message
+//         });
+//     }
+// });
+
+// // Endpoint to add a student
+// studentRouter.post("/add_Student", async (req, res) => {
+//     const { reg_no, name, papers } = req.body;
+//     try {
+//         const student = new StudentModel({
+//             reg_no,
+//             name,
+//             papers: papers.map(id => mongoose.Types.ObjectId(id))
+//         });
+//         const createdStudent = await student.save();
+//         res.status(201).json({
+//             message: "Student created successfully",
+//             data: createdStudent
+//         });
+//     } catch (err) {
+//         res.status(500).json({
+//             message: "Error creating student",
+//             error: err.message
+//         });
+//     }
+// });
+
+// // Endpoint to get all students
+// studentRouter.get("/students", async (req, res) => {
+//     try {
+//         const students = await StudentModel.find().populate('subjects').populate('batch').populate('department');
+//         res.status(200).json({ students });
+//     } catch (err) {
+//         res.status(500).json({
+//             message: "Error retrieving students",
+//             error: err.message
+//         });
+//     }
+// });
+
+//--------------------------------------------------------------------------------------------------------------------------------------//
+
 
 module.exports = {  
     studentRouter: studentRouter

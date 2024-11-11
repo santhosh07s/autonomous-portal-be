@@ -35,8 +35,6 @@ const subject = new Schema({
 const Students= new Schema({
     reg_no: Number, 
     name: String,
-    // batch: { type: Schema.Types.ObjectId, ref: 'Batch' },
-    // department: { type: Schema.Types.ObjectId, ref: 'Dept' }, 
     papers: [
         {
             paper: { type: Schema.Types.ObjectId, ref: 'subject' }, 
@@ -48,6 +46,8 @@ const Students= new Schema({
             }
         }
     ]
+    // batch: { type: Schema.Types.ObjectId, ref: 'Batch' },
+    // department: { type: Schema.Types.ObjectId, ref: 'Dept' }, 
 
 });
 
