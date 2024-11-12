@@ -8,28 +8,30 @@ const Admin = new Schema({
     password : String
 })
 
-const Dept = new Schema({   
-    department: String,
+const Dept = new Schema({
+    department: { type: String, required: true },
     batches: [{ type: Schema.Types.ObjectId, ref: 'batch' }]
 })
 
 const batch = new Schema({
-    batch: { type: String, unique: true}, 
-    department: { type:  Schema.Types.ObjectId, ref: 'Dept' }, 
+    batch: { type: String, required: true }, 
+    department: { type:  Schema.Types.ObjectId, ref: 'Dept', required: true}, 
     semesters: [{ type: Schema.Types.ObjectId, ref: 'semester' }],
     students: [{ type: Schema.Types.ObjectId, ref: 'Students' }]
 })
+batch.index({ batch: 1, department: 1 }, { unique: true });
 
 
 const semester = new Schema({
-    sem_no: { type: Number, unique: false},
-    batch: { type: Schema.Types.ObjectId, ref: 'batch'},
+    sem_no: { type: Number, required: true },
+    batch: { type: Schema.Types.ObjectId, ref: 'batch', required: true },
     subjects : [{ type: Schema.Types.ObjectId, ref: 'subject' }] 
 })
 
+
 const subject = new Schema({
     code : { type : String, unique : true },
-    name : String,
+    name : { type: String, required: true }, 
     paper_cost: String,
     sem_no: { type: Number},
 })
@@ -60,7 +62,6 @@ const BatchModel = mongoose.model('Batches', batch);
 const SubjectsModel = mongoose.model('Subjects', subject)
 const SemesterModel = mongoose.model('semester', semester)
 const StudentModel = mongoose.model('Students', Students)
-
 
 module.exports = {
     AdminModel : AdminModel,
