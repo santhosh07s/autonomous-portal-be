@@ -27,7 +27,7 @@ const semester = new Schema({
     batch: { type: Schema.Types.ObjectId, ref: 'batch', required: true },
     subjects : [{ type: Schema.Types.ObjectId, ref: 'subject' }] 
 })
-
+semester.index({ batch: 1, sem_no: 1 }, { unique: true });
 
 const subject = new Schema({
     code : { type : String, unique : true },
