@@ -17,26 +17,30 @@ const calculateCost = (subjectCode) => {
 }
 
 //function to create the semester
-const createSemester = async (semesters) => {
+const createSemester = async (semesters, batch_id) => {
+    console.log(batch_id)
     const semArray = [];
     for (const semester of semesters) {
         
-        const createdSemester = await SemesterModel.create({ sem_no: semester.sem_no });
-        console.log(createdSemester);
+        const createdSemester = await SemesterModel.create(
+            { 
+                sem_no: semester.sem_no,
+                batch: batch_id
+            });
 
         for (const subject of semester.subjects) {
             const cost = calculateCost(subject.code);
             
             let createdSubject = await SubjectsModel.findOne({ code: subject.code });
-            console.log(createdSubject);
+            // console.log(createdSubject);
 
             if (!createdSubject) {
                 createdSubject = await SubjectsModel.create({
+                    sem_no: semester.sem_no,
                     code: subject.code,
                     name: subject.name,
                     paper_cost: cost
                 });
-                console.log(createdSubject);
             }
 
             createdSemester.subjects.push(new mongoose.Types.ObjectId(createdSubject._id));
@@ -53,9 +57,13 @@ const createSemester = async (semesters) => {
 const createStudent = async (studentData) => {
     const studentsRef = []
     for ( student of studentData){
+        // console.log(student)
         const { reg_no, name, papers } = student;
         const paperReferences = [];
-
+        // console.log("-------",
+            // reg_no,
+            // name,
+            // papers)
         for (const paper of papers) {
             const { code, type } = paper;
 
@@ -63,7 +71,7 @@ const createStudent = async (studentData) => {
             let subject = await SubjectsModel.findOne({ code: code });
             if (!subject) {
                 // Optional: handle cases where the subject code is not found
-                console.log(`Subject with code ${code} not found.`);
+                // console.log(`Subject with code ${code} not found.`);
                 continue;
             }
 
@@ -72,17 +80,20 @@ const createStudent = async (studentData) => {
                 paper: subject._id,
                 type: type
             });
+            // console.log("paperReferences", paperReferences)
         }
 
         // Create the student with their papers
         let createdStudent = await StudentModel.findOne({ reg_no: reg_no });
-        if (!createStudent){
+        if (!createdStudent){
             createdStudent = await StudentModel.create({
-                reg_no,
-                name,
+                reg_no: reg_no,
+                name: name,
                 papers: paperReferences
-            });            
+            });         
+            
         } 
+
         
         studentsRef.push(new mongoose.Types.ObjectId(createdStudent._id))
     }
@@ -95,7 +106,7 @@ studentRouter.post("/insert", async (req, res) => {
     const insertData = req.body.data;
     const deptId = req.body.dept;
     const batch = req.body.batch; //2026
-    // console.log(deptId, batchID, rawData)
+    // console.log(deptId, batch, insertData)
     if(!(insertData && deptId && batch)){
         return res.status(400).json({
             message: "No Data to add"
@@ -111,7 +122,7 @@ studentRouter.post("/insert", async (req, res) => {
         const createdBatch = await BatchModel.create({ batch, department: deptId });
 
         //creating semesters
-        const semArray = await createSemester(insertData.semesters)
+        const semArray = await createSemester(insertData.semesters, createdBatch._id)
         createdBatch.semesters = semArray
         await createdBatch.save()  
         
@@ -136,6 +147,7 @@ studentRouter.post("/insert", async (req, res) => {
         });
         
     } catch (err) {
+        console.log(err)
         res.status(500).json({
             message: "Error in Inserting Data",
             error: err.message
@@ -162,7 +174,7 @@ studentRouter.post('/all', async (req, res) => {
                 populate: {
                     path: 'papers.paper',
                     model: 'Subjects', // Ensure this matches the Subject model name
-                    select: 'code name paper_cost'
+                    select: 'code name paper_cost sem_no'
                 }
             });
 
