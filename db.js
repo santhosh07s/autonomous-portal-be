@@ -39,6 +39,7 @@ const subject = new Schema({
 const Students= new Schema({
     reg_no: Number, 
     name: String,
+    dob: String,
     papers: [
         {
             paper: { type: Schema.Types.ObjectId, ref: 'subject' }, 

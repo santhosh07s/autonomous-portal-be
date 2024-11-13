@@ -57,7 +57,7 @@ const createStudent = async (studentData) => {
     const studentsRef = []
     for ( student of studentData){
         // console.log(student)
-        const { reg_no, name, papers } = student;
+        const { reg_no, name, dob, papers } = student;
         const paperReferences = [];
         // console.log("-------",
             // reg_no,
@@ -88,6 +88,7 @@ const createStudent = async (studentData) => {
             createdStudent = await StudentModel.create({
                 reg_no: reg_no,
                 name: name,
+                dob: dob,
                 papers: paperReferences
             });         
             
