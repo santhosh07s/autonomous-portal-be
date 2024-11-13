@@ -6,6 +6,7 @@ const SECRET = process.env.ADMIN_JWT_SECRET;
 const adminMiddleware = (req, res, next) =>{
 
     const token = req.headers.token;
+    // console.log(token)
     if(token){
         try{
             const jwtDecoded = jwt.verify( token , SECRET);

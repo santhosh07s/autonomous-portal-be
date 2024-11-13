@@ -13,11 +13,15 @@ app.use(cors({
 const { adminRouter } = require('./routes/admin');
 const { mainRouter } = require('./routes/main');
 const { studentRouter } = require('./routes/students');
+const { adminMiddleware } = require('./middleware/adminAuth');
 
 
 app.use(express.json()) //json middleware
 
 app.use('/admin', adminRouter);
+
+// routes from here are authenticated
+app.use(adminMiddleware)
 app.use('/main', mainRouter );
 app.use('/students',studentRouter)
 

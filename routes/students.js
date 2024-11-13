@@ -1,7 +1,6 @@
 const { Router } = require('express');
 const studentRouter = Router();
 // imported middleware
-const { adminMiddleware } = require('../middleware/adminAuth');
 // studentRouter.use(adminMiddleware);
 
 const { DeptModel, BatchModel, SubjectsModel, SemesterModel, StudentModel } = require('../db');

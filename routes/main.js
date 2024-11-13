@@ -1,7 +1,6 @@
 const { Router } = require('express');
 const mainRouter = Router();
 // imported middleware
-const { adminMiddleware } = require('../middleware/adminAuth');
 
 // mainRouter.use(adminMiddleware);
 // imported db file
