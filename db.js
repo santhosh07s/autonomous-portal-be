@@ -10,7 +10,12 @@ const Admin = new Schema({
 
 const Dept = new Schema({
     department: { type: String, required: true },
-    batches: [{ type: Schema.Types.ObjectId, ref: 'batch' }]
+    batches: [{ type: Schema.Types.ObjectId, ref: 'batch' }],
+    degree: {
+        type: String,
+        enum: ["BE", "ME", "BTECH", "MTECH"],  
+        message: 'DEGREE must be "BE", "ME", "BTECH", "MTECH" '
+    }
 })
 
 const batch = new Schema({
