@@ -13,8 +13,8 @@ const Dept = new Schema({
     batches: [{ type: Schema.Types.ObjectId, ref: 'batch' }],
     degree: {
         type: String,
-        enum: ["B.E", "M.E", "B.Tech", "M.Tech"],  
-        message: 'DEGREE must be "BE", "ME", "BTECH", "MTECH" '
+        enum: ["B.E", "M.E", "B.Tech", "Ph.d"],  
+        message: 'DEGREE must be "BE", "ME", "BTECH", "Phd" '
     }
 })
 

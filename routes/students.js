@@ -131,7 +131,7 @@ studentRouter.post("/insert", async (req, res) => {
 
         //creating Students
         
-        const studentData = insertData.students;  // Assuming student data is directly in the request body
+        const studentData = insertData.students; // Assuming student data is directly in the request body
         
         if (!(studentData.length > 0)) {
             return res.status(400).json({ message: "Incomplete student data" });
@@ -195,8 +195,8 @@ studentRouter.post('/all', async (req, res) => {
     }
 });
 
-//--------------------------------------------------------------------------------------------------------------------------------------//
 
+//--------------------------------------------------------------------------------------------------------------------------------------//
 //futuristic routes for adding sub, sem need to update all the routes
 // Endpoint to add a subject
 //--------------------------------------------------------------------------------------------------------------------------------------//

@@ -15,7 +15,7 @@ mainRouter.post("/add_Dept", async(req,res)=>{
             const CreatedDept = await DeptModel.create({
                 department : Dept
             })
-
+            
             if(CreatedDept){
                 res.status(201).json({  
                     Message : "Department Created",

@@ -10,17 +10,17 @@ const { AdminModel } = require('../db');
 
 adminRouter.post("/login", async(req, res) => {
     const { username, password } = req.body;
-    console.log( username, password)
+    // console.log( username, password)
     try{
         const matchedAdmin = await AdminModel.findOne({
             username : username,
             password : password
         })
-        console.log(matchedAdmin)
+        // console.log(matchedAdmin)
         const token = jwt.sign({
             id : matchedAdmin._id
         },SECRET)
-        console.log(token)
+        // console.log(token)
         
         res.status(201).json({
             message : `Admin sign in success -> ${matchedAdmin.name}`,
