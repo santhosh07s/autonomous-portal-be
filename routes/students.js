@@ -9,7 +9,7 @@ const { default: mongoose } = require('mongoose');
 //function to calculate the subjects amount
 const calculateCost = (subjectCode) => {
     if (subjectCode.toUpperCase().includes("T+L")){
-        return "600";
+        return "500";
     }else{
         return "300";
     }
