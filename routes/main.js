@@ -83,6 +83,46 @@ mainRouter.get("/batch", async (req, res) => {
     }
 });
 
+// to fetch sem and subs
+mainRouter.post('/subjects', async (req, res) => {
+    const { dept_id, batch } = req.body; // Extract dept_id and batch from query parameters
+
+    if (!dept_id || !batch) {
+        return res.status(400).json({
+            message: "Please provide both dept_id and batch as query parameters."
+        });
+    }
+
+    try {
+        // Getting sem details
+        const batchDoc = await BatchModel.findOne({ batch, department: dept_id })
+            .populate({
+                path: 'semesters',
+                model: 'semester', 
+                populate: {
+                    path: 'subjects',
+                    model: 'Subjects', 
+                    select: 'code name sem_no'
+                }
+            });
+
+
+        if (!batchDoc) {
+            return res.status(404).json({ message: "Batch not found in the specified department." });
+        }
+        res.status(200).json({
+            message: "Students data retrieved successfully",
+            data: batchDoc.semesters
+        });
+    } catch (error) {
+        console.error("Error fetching students for the specified department and batch:", error);
+        res.status(500).json({
+            message: "Error retrieving student data",
+            error: error.message
+        });
+    }
+});
+
 
 module.exports = {
     mainRouter : mainRouter
