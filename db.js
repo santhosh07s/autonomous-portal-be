@@ -20,12 +20,11 @@ const Dept = new Schema({
 
 const batch = new Schema({
     batch: { type: String, required: true }, 
-    department: { type:  Schema.Types.ObjectId, ref: 'Dept', required: true}, 
+    department: { type:  Schema.Types.ObjectId, ref: 'Dept', required: true},
     semesters: [{ type: Schema.Types.ObjectId, ref: 'semester' }],
     students: [{ type: Schema.Types.ObjectId, ref: 'Students' }]
 })
 batch.index({ batch: 1, department: 1 }, { unique: true });
-
 
 const semester = new Schema({
     sem_no: { type: Number, required: true },
