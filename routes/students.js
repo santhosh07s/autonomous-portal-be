@@ -262,13 +262,13 @@ studentRouter.post("/deleteBatch", async (req, res) => {
 });
 
 // attendance portal
-studentRouter.post("/attendance", async (req, res) => {
+studentRouter.post("/allAttendance", async (req, res) => {
   const { subject_code } = req.body;
-  
+  console.log(subject_code);
   try {
     // Step 1: Find the subject by its code
     const subject = await SubjectsModel.findOne({ code: subject_code });
-
+    console.log(subject);
     if (!subject) {
       return res.status(404).json({ message: "Subject not found" });
     }
@@ -295,258 +295,67 @@ studentRouter.post("/attendance", async (req, res) => {
   }
 });
 
+studentRouter.post("/deptAttendance", async (req, res) => {
+  const { subject_code, department_id, batch } = req.body;
 
-//--------------------------------------------------------------------------------------------------------------------------------------//
-//futuristic routes for adding sub, sem need to update all the routes
-// Endpoint to add a subject
-//--------------------------------------------------------------------------------------------------------------------------------------//
+  try {
+    // Step 1: Find the subject by its code
+    const subject = await SubjectsModel.findOne({ code: subject_code });
+    if (!subject) {
+      return res.status(404).json({ message: "Subject not found" });
+    }
 
-// studentRouter.post("/add_Subject", async (req, res) => {
-//     const { code, name, paper_cost } = req.body;
-//     try {
-//         const createdSubject = await SubjectsModel.create({ code, name, paper_cost });
-//         res.status(201).json({
-//             message: "Subject created successfully",
-//             data: createdSubject
-//         });
-//     } catch (err) {
-//         res.status(500).json({
-//             message: "Error adding subject",
-//             error: err.message
-//         });
-//     }
-// });
+    // Step 2: Find the batch within the department
+    const batchDoc = await BatchModel.findOne({
+      department: department_id,
+      batch: batch,
+    }).populate({
+      path: "students",
+      select: "reg_no name papers",
+      populate: {
+        path: "papers.paper",
+        model: "Subjects", // Correct model name from mongoose.model
+        select: "code",
+      },
+    });
 
-// // Endpoint to get all subjects
-// studentRouter.get("/subjects", async (req, res) => {
-//     try {
-//         const subjects = await SubjectsModel.find();
-//         res.status(200).json({ subjects });
-//     } catch (err) {
-//         res.status(500).json({
-//             message: "Error retrieving subjects",
-//             error: err.message
-//         });
-//     }
-// });
+    if (!batchDoc) {
+      return res.status(404).json({
+        message: "Batch not found in the specified department",
+      });
+    }
 
-// // Endpoint to add a semester
-// studentRouter.post("/add_Semester", async (req, res) => {
-//     const { sem_no, subjectIds } = req.body;
-//     console.log(subjectIds)
-//     try {
-//         const createdSemester = await SemesterModel.create({ sem_no, subjectIds });
-//         res.status(201).json({
-//             message: "Semester created successfully",
-//             data: createdSemester
-//         });
-//     } catch (err) {
-//         res.status(500).json({
-//             message: "Error adding semester",
-//             error: err.message
-//         });
-//     }
-// });
+    // Step 3: Filter students with the subject in their papers
+    const studentsWithSubject = batchDoc.students.filter((student) =>
+      student.papers.some(
+        (paper) =>
+          paper.paper && paper.paper._id.toString() === subject._id.toString()
+      )
+    );
 
-// // Endpoint to get all semesters with subjects
-// studentRouter.get("/semesters", async (req, res) => {
-//     try {
-//         const semesters = await SemesterModel.find()
-//         res.status(200).json({ semesters });
-//     } catch (err) {
-//         res.status(500).json({
-//             message: "Error retrieving semesters",
-//             error: err.message
-//         });
-//     }
-// });
-
-// // Endpoint to add a student
-// studentRouter.post("/add_Student", async (req, res) => {
-//     const { reg_no, name, papers } = req.body;
-//     try {
-//         const student = new StudentModel({
-//             reg_no,
-//             name,
-//             papers: papers.map(id => mongoose.Types.ObjectId(id))
-//         });
-//         const createdStudent = await student.save();
-//         res.status(201).json({
-//             message: "Student created successfully",
-//             data: createdStudent
-//         });
-//     } catch (err) {
-//         res.status(500).json({
-//             message: "Error creating student",
-//             error: err.message
-//         });
-//     }
-// });
-
-// // Endpoint to get all students
-// studentRouter.get("/students", async (req, res) => {
-//     try {
-//         const students = await StudentModel.find().populate('subjects').populate('batch').populate('department');
-//         res.status(200).json({ students });
-//     } catch (err) {
-//         res.status(500).json({
-//             message: "Error retrieving students",
-//             error: err.message
-//         });
-//     }
-// });
-
-// studentRouter.post("/deleteSemesters", async (req, res) => {
-//   const { batch_id } = req.body;
-
-//   try {
-//     // Step 1: Find the batch document
-//     const batchDoc = await BatchModel.findById(batch_id);
-//     if (!batchDoc) {
-//       return res.status(404).json({ message: "Batch not found" });
-//     }
-
-//     // Step 2: Get all semester IDs from the batch
-//     const semesterIds = batchDoc.semesters;
-//     if (semesterIds.length === 0) {
-//       return res
-//         .status(400)
-//         .json({ message: "No semesters to delete in this batch" });
-//     }
-
-//     // Step 3: Find and delete all related semester documents
-//     const deletedSemesters = await SemesterModel.deleteMany({
-//       _id: { $in: semesterIds },
-//     });
-
-//     // Step 4: Find and delete all subjects related to the deleted semesters
-//     const allSubjectIds = await SemesterModel.find({
-//       _id: { $in: semesterIds },
-//     })
-//       .select("subjects")
-//       .lean();
-
-//     const subjectIds = allSubjectIds.flatMap((sem) => sem.subjects);
-//     if (subjectIds.length > 0) {
-//       await SubjectsModel.deleteMany({ _id: { $in: subjectIds } });
-//     }
-
-//     // Step 5: Clear semester references from the batch
-//     batchDoc.semesters = [];
-//     await batchDoc.save();
-
-//     // Step 6: Respond with success message
-//     res.status(200).json({
-//       message:
-//         "Semesters and their related data deleted successfully from the batch",
-//       deletedCount: deletedSemesters.deletedCount,
-//     });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ message: "An error occurred", error });
-//   }
-// });
-
-// studentRouter.post("/deleteStudents", async (req, res) => {
-//   const { batch_id } = req.body;
-//   try {
-//     // Step 1: Find the batch document
-//     const batchDoc = await BatchModel.findById(batch_id);
-//     if (!batchDoc) {
-//       return res.status(404).json({ message: "Batch not found" });
-//     }
-
-//     // Step 2: Get all sstudents IDs from the batch
-//     const studentsIds = batchDoc.students;
-//     if (studentsIds.length === 0) {
-//       return res
-//         .status(400)
-//         .json({ message: "No Students to delete in this batch" });
-//     }
-
-//     // Step 3: Find and delete all related Students documents
-//     const deletedStudents = await StudentModel.deleteMany({
-//       _id: { $in: studentsIds },
-//     });
-
-//     // Step 4: Find and delete all subjects related to the deleted semesters
-//     // const allPaperIds = await StudentModel.find({
-//     //   _id: { $in: studentsIds },
-//     // })
-
-//     // const subjectIds = allSubjectIds.flatMap((sem) => sem.subjects);
-//     // if (subjectIds.length > 0) {
-//     //   await SubjectsModel.deleteMany({ _id: { $in: subjectIds } });
-//     // }
-
-//     // Step 5: Clear student references from the batch
-//     batchDoc.students = [];
-//     await batchDoc.save();
-
-//     // Step 6: Respond with success message
-//     res.status(200).json({
-//       message:
-//         "Students and their related data deleted successfully from the batch",
-//       deletedCount: deletedStudents.deletedCount,
-//     });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ message: "An error occurred", error });
-//   }
-// });
-
-// // studentRouter.post("/deleteBatch", async (req, res) => {
-// //   const { batch_id } = req.body;
-
-// //   try {
-// //     // Check if the batch exists
-// //     const batchDoc = await BatchModel.findById(batch_id);
-// //     if (!batchDoc) {
-// //       return res.status(404).json({ message: "Batch not found" });
-// //     }
-// //     console.log(batchDoc);
-
-// //     // Delete the batch
-// //     const deletedBatch = await BatchModel.deleteOne({ _id: batch_id });
-// //     console.log(deletedBatch);
-// //     if (deletedBatch.deletedCount === 0) {
-// //       return res.status(404).json({ message: "Failed to delete the batch" });
-// //     }
-// //     res.status(200).json({
-// //       message: "Batch deleted successfully",
-// //       deletedCount: deletedBatch.deletedCount,
-// //     });
-// //   } catch (err) {
-// //     console.error(err);
-// //     res.status(500).json({ message: "An error occurred", error: err });
-// //   }
-// // });
-
-// studentRouter.post("/deleteBatch", async (req, res) => {
-//   const { batch_id } = req.body;
-
-//   try {
-//     const batchDoc = await BatchModel.findById(batch_id);
-//     if (!batchDoc) {
-//       return res.status(404).json({ message: "Batch not found" });
-//     }
-
-//     const deletedBatch = await BatchModel.deleteOne({ _id: batch_id });
-
-//     if (deletedBatch.deletedCount === 0) {
-//       return res.status(404).json({ message: "Failed to delete the batch" });
-//     }
-
-//     res.status(200).json({
-//       message: "Batch deleted successfully",
-//       deletedCount: deletedBatch.deletedCount,
-//     });
-//   } catch (err) {
-//     res.status(500).json({ message: "An error occurred", error: err });
-//   }
-// });
-
-//--------------------------------------------------------------------------------------------------------------------------------------//
+    if (studentsWithSubject.length === 0) {
+      return res.status(404).json({
+        message:
+          "No students found with the specified subject in the given batch and department",
+      });
+    }
+    const resData = studentsWithSubject.map((std) => {
+      return {
+        name: std.name,
+        reg_no: std.reg_no,
+        id: std._id,
+      };
+    });
+    // Step 4: Return the filtered students
+    res.status(200).json({
+      message: "Students found",
+      students: resData,
+    });
+  } catch (error) {
+    console.error("Error fetching students: ", error);
+    res.status(500).json({ message: "An error occurred", error });
+  }
+});
 
 module.exports = {
   studentRouter: studentRouter,
