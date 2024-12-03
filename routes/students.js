@@ -206,7 +206,7 @@ studentRouter.post("/all", async (req, res) => {
   }
 });
 
-studentRouter.post("/deleteBatchWithData", async (req, res) => {
+studentRouter.post("/deleteBatch", async (req, res) => {
   const { batch_id } = req.body;
 
   try {
@@ -260,6 +260,41 @@ studentRouter.post("/deleteBatchWithData", async (req, res) => {
     res.status(500).json({ message: "An error occurred", error });
   }
 });
+
+// attendance portal
+studentRouter.post("/attendance", async (req, res) => {
+  const { subject_code } = req.body;
+  
+  try {
+    // Step 1: Find the subject by its code
+    const subject = await SubjectsModel.findOne({ code: subject_code });
+
+    if (!subject) {
+      return res.status(404).json({ message: "Subject not found" });
+    }
+
+    // Step 2: Find students who have this subject in their papers array
+    const studentsWithSubject = await StudentModel.find({
+      "papers.paper": subject._id,
+    }).select("reg_no name");
+
+    if (studentsWithSubject.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No students found for this subject" });
+    }
+
+    // Step 3: Return the students in a separate array
+    res.status(200).json({
+      message: "Students found with the given subject",
+      students: studentsWithSubject,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "An error occurred", error });
+  }
+});
+
 
 //--------------------------------------------------------------------------------------------------------------------------------------//
 //futuristic routes for adding sub, sem need to update all the routes
