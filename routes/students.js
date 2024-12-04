@@ -23,7 +23,7 @@ const calculateCost = (subjectCode) => {
 
 //function to create the semester
 const createSemester = async (semesters, batch_id) => {
-  console.log(batch_id);
+  // console.log(batch_id);
   const semArray = [];
   for (const semester of semesters) {
     const createdSemester = await SemesterModel.create({
@@ -54,7 +54,7 @@ const createSemester = async (semesters, batch_id) => {
     await createdSemester.save();
     semArray.push(new mongoose.Types.ObjectId(createdSemester._id));
   }
-  console.log(semArray);
+  // console.log(semArray);
   return semArray;
 };
 
@@ -208,13 +208,14 @@ studentRouter.post("/all", async (req, res) => {
 
 studentRouter.post("/deleteBatch", async (req, res) => {
   const { batch, department_id } = req.body;
-
+  // console.log(batch, department_id )
   try {
     // Step 1: Find the batch document
-      const batchDoc = await BatchModel.findOne({
-        department: department_id,
-        batch: batch,
-      });
+    const batchDoc = await BatchModel.findOne({
+      department: department_id,
+      batch: batch,
+    });
+    console.log(batchDoc)
     if (!batchDoc) {
       return res.status(404).json({ message: "Batch not found" });
     }
@@ -248,7 +249,7 @@ studentRouter.post("/deleteBatch", async (req, res) => {
     }
 
     // Step 4: Delete the batch itself
-    const deletedBatch = await BatchModel.deleteOne({ _id: batch_id });
+    const deletedBatch = await BatchModel.deleteOne({ _id: batchDoc._id});
 
     if (deletedBatch.deletedCount === 0) {
       return res.status(404).json({ message: "Failed to delete the batch" });
@@ -259,7 +260,7 @@ studentRouter.post("/deleteBatch", async (req, res) => {
       message: "Batch and all related data deleted successfully",
     });
   } catch (error) {
-    console.error(error);
+    // console.error(error);
     res.status(500).json({ message: "An error occurred", error });
   }
 });
@@ -293,7 +294,7 @@ studentRouter.post("/allAttendance", async (req, res) => {
       students: studentsWithSubject,
     });
   } catch (error) {
-    console.error(error);
+    // console.error(error);
     res.status(500).json({ message: "An error occurred", error });
   }
 });
@@ -355,7 +356,7 @@ studentRouter.post("/deptAttendance", async (req, res) => {
       students: resData,
     });
   } catch (error) {
-    console.error("Error fetching students: ", error);
+    // console.error("Error fetching students: ", error);
     res.status(500).json({ message: "An error occurred", error });
   }
 });
