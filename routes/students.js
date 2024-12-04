@@ -207,11 +207,14 @@ studentRouter.post("/all", async (req, res) => {
 });
 
 studentRouter.post("/deleteBatch", async (req, res) => {
-  const { batch_id } = req.body;
+  const { batch, department_id } = req.body;
 
   try {
     // Step 1: Find the batch document
-    const batchDoc = await BatchModel.findById(batch_id);
+      const batchDoc = await BatchModel.findOne({
+        department: department_id,
+        batch: batch,
+      });
     if (!batchDoc) {
       return res.status(404).json({ message: "Batch not found" });
     }
