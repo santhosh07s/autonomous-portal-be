@@ -225,21 +225,21 @@ studentRouter.post("/deleteBatch", async (req, res) => {
 
     if (semesterIds.length > 0) {
       // Fetch all subject IDs before deleting the semesters
-      const allSubjectIds = await SemesterModel.find({
-        _id: { $in: semesterIds },
-      })
-        .select("subjects")
-        .lean();
+      // const allSubjectIds = await SemesterModel.find({
+      //   _id: { $in: semesterIds },
+      // })
+      //   .select("subjects")
+      //   .lean();
 
-      const subjectIds = allSubjectIds.flatMap((sem) => sem.subjects);
+      // const subjectIds = allSubjectIds.flatMap((sem) => sem.subjects);
 
       // Delete semesters
       await SemesterModel.deleteMany({ _id: { $in: semesterIds } });
 
       // Delete related subjects
-      if (subjectIds.length > 0) {
-        await SubjectsModel.deleteMany({ _id: { $in: subjectIds } });
-      }
+      // if (subjectIds.length > 0) {
+      //   await SubjectsModel.deleteMany({ _id: { $in: subjectIds } });
+      // }
     }
 
     // Step 3: Delete related students and their data
